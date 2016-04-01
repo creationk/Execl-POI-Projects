@@ -16,23 +16,55 @@ import org.apache.poi.xssf.streaming.SheetDataWriter;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class ExportImpl {
+
 	private static final String TEMPLATE = "TEMPLATE.xlsx";
 	private static final String OUTPUT = "Output.xlsx";
-	private static final String PATH = "files//";
+	private static final String PATH = "files" + File.separator;
 	private static final String filename = PATH + TEMPLATE;
 
 	private Workbook workbook;
 
 	public static void main(String[] args) throws IOException {
-		new ExportImpl().export();
+		new ExportImpl().export(345);
+		new ExportImpl().export(12);
 	}
 
-	private void export() throws IOException {
+	private static void makePoiDir(File dir) {
+		if (!dir.exists()) {
+			System.out.println("Directory " + dir + " doesn't exist");
+			dir.mkdirs();
+			System.out.println("Directory created before export");
+		}
+	}
+
+	void export(int id) throws IOException {
+		// createDirectory(id);
+		checkDirectory();
 		createWorkbook();
 		createAndBuildSheets();
 		writeToFile();
 		deleteSXSSFTempFiles(workbook);
+		// resetSystemProperty(initialSystemPropery);
 
+	}
+
+	private void checkDirectory() {
+		File dir=new File(System.getProperty("java.io.tmpdir"),"poifiles");
+		if (!dir.exists()){
+			System.out.println(dir+" doesn't exist.");
+			dir.mkdirs();
+		}
+		System.setProperty("poi.keep.tmp.files", "true");
+	}
+
+
+	private void createDirectory(int id) {
+		File poidir = new File(System.getProperty("java.io.tmpdir")
+				+ File.separator + "maindir" + File.separator + id
+				+ File.separator
+				+ Long.toHexString(Double.doubleToLongBits(Math.random())));
+		makePoiDir(poidir);
+		System.setProperty("java.io.tmpdir", poidir.getAbsolutePath());
 	}
 
 	private void createAndBuildSheets() {
@@ -56,7 +88,8 @@ public class ExportImpl {
 		inputStream.close();
 	}
 
-	private void deleteSXSSFTempFiles(Workbook workbook) throws FileNotFoundException {
+	private void deleteSXSSFTempFiles(Workbook workbook)
+			throws FileNotFoundException {
 		int numberOfSheets = workbook.getNumberOfSheets();
 
 		for (int i = 0; i < numberOfSheets; i++) {
@@ -65,9 +98,11 @@ public class ExportImpl {
 			if (sheetAt instanceof SXSSFSheet) {
 				try {
 					SheetDataWriter sdw;
-					sdw = (SheetDataWriter) getPrivateAttribute(sheetAt, "_writer");
+					sdw = (SheetDataWriter) getPrivateAttribute(sheetAt,
+							"_writer");
 					File f = (File) getPrivateAttribute(sdw, "_fd");
-					System.out.println(f.getAbsolutePath());
+					System.out.println("Deleting " + f.getAbsolutePath());
+					f.delete();
 
 				} catch (NoSuchFieldException e) {
 					e.printStackTrace();
@@ -80,10 +115,12 @@ public class ExportImpl {
 
 	}
 
-	public static Object getPrivateAttribute(Object containingClass, String fieldToGet)
-			throws NoSuchFieldException, IllegalAccessException {
+	public static Object getPrivateAttribute(Object containingClass,
+			String fieldToGet) throws NoSuchFieldException,
+			IllegalAccessException {
 		// get the field of the containingClass instance
-		Field declaredField = containingClass.getClass().getDeclaredField(fieldToGet);
+		Field declaredField = containingClass.getClass().getDeclaredField(
+				fieldToGet);
 		// set it as accessible
 		declaredField.setAccessible(true);
 		// access it
